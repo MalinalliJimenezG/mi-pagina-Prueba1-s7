@@ -110,6 +110,27 @@
     font-size: 14px;
     cursor: pointer;
   }
+  .votacion button:disabled {
+    opacity: .5;
+    cursor: default;
+  }
+  .votacion .ya-votada {
+    color: #2b6fe0;
+    font-weight: 600;
+  }
+  .aviso {
+    margin: 0 0 16px;
+    font-size: 14px;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .aviso.error {
+    background: #fdeceb;
+    color: #a23b32;
+  }
+  @media (prefers-color-scheme: dark) {
+    .aviso.error { background: #3a2320 !important; color: #f2a99e !important; }
+  }
   form {
     display: flex;
     flex-direction: column;
@@ -162,6 +183,7 @@
     </div>
 
     <section class="vista activa" id="vista-propuestas" role="tabpanel" aria-labelledby="tab-propuestas">
+      <p class="aviso error" id="aviso-propuestas" hidden></p>
       <ul class="lista-propuestas" id="lista-propuestas" hidden></ul>
       <p class="vacio" id="mensaje-vacio">
         Todavía no hay propuestas de lugares para la cena de fin de año.
@@ -172,6 +194,7 @@
       <p class="explicacion" style="margin-bottom:16px;">
         Propón un lugar para la cena de fin de año.
       </p>
+      <p class="aviso error" id="aviso-form" hidden></p>
       <form id="form-propuesta">
         <label>
           Nombre del lugar
@@ -190,6 +213,7 @@
     </section>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>
     const tabPropuestas = document.getElementById('tab-propuestas');
     const tabProponer = document.getElementById('tab-proponer');
@@ -211,6 +235,135 @@
     tabProponer.addEventListener('click', () => {
       mostrarVista(tabProponer, vistaProponer, tabPropuestas, vistaPropuestas);
     });
+
+    const SUPABASE_URL = 'https://byczuywogxjqivtqvoha.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_6EB49bOLVKbSDWmFEaXrig_iEdqQSsq';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function obtenerElectorId() {
+      let id = localStorage.getItem('elector_id');
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem('elector_id', id);
+      }
+      return id;
+    }
+
+    function escaparHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+    function mostrarAviso(elemento, mensaje) {
+      elemento.textContent = mensaje;
+      elemento.hidden = !mensaje;
+    }
+
+    const listaPropuestas = document.getElementById('lista-propuestas');
+    const mensajeVacio = document.getElementById('mensaje-vacio');
+    const avisoPropuestas = document.getElementById('aviso-propuestas');
+
+    async function cargarPropuestas() {
+      mostrarAviso(avisoPropuestas, '');
+
+      const [{ data: propuestas, error: errorPropuestas }, { data: votos, error: errorVotos }] =
+        await Promise.all([
+          db.from('propuestas_cena').select('*').order('creado_en', { ascending: true }),
+          db.from('votos_cena').select('propuesta_id, elector_id'),
+        ]);
+
+      if (errorPropuestas || errorVotos) {
+        mostrarAviso(avisoPropuestas, 'No se pudieron cargar las propuestas. Intenta recargar la página.');
+        return;
+      }
+
+      const conteoVotos = {};
+      votos.forEach((v) => {
+        conteoVotos[v.propuesta_id] = (conteoVotos[v.propuesta_id] || 0) + 1;
+      });
+
+      const electorId = obtenerElectorId();
+      const votoDeEsteElector = votos.find((v) => v.elector_id === electorId);
+      const propuestaVotada = votoDeEsteElector ? votoDeEsteElector.propuesta_id : null;
+
+      if (!propuestas.length) {
+        listaPropuestas.hidden = true;
+        mensajeVacio.hidden = false;
+        listaPropuestas.innerHTML = '';
+        return;
+      }
+
+      mensajeVacio.hidden = true;
+      listaPropuestas.hidden = false;
+      listaPropuestas.innerHTML = propuestas.map((p) => {
+        const votos = conteoVotos[p.id] || 0;
+        const yaVoto = propuestaVotada !== null;
+        const esLaVotada = propuestaVotada === p.id;
+        let controlVoto;
+        if (esLaVotada) {
+          controlVoto = '<span class="ya-votada">Tu voto</span>';
+        } else if (yaVoto) {
+          controlVoto = '<button type="button" disabled>Votar</button>';
+        } else {
+          controlVoto = `<button type="button" class="boton-votar" data-id="${p.id}">Votar</button>`;
+        }
+        return `
+          <li class="propuesta">
+            <h3>${escaparHtml(p.lugar)}</h3>
+            <p class="quien">Propuesto por ${escaparHtml(p.persona)}</p>
+            <p class="justificacion">${escaparHtml(p.justificacion)}</p>
+            <div class="votacion">
+              <span>${votos} ${votos === 1 ? 'voto' : 'votos'}</span>
+              ${controlVoto}
+            </div>
+          </li>
+        `;
+      }).join('');
+
+      listaPropuestas.querySelectorAll('.boton-votar').forEach((boton) => {
+        boton.addEventListener('click', () => votar(boton.dataset.id));
+      });
+    }
+
+    async function votar(propuestaId) {
+      const electorId = obtenerElectorId();
+      const { error } = await db.from('votos_cena').insert({
+        propuesta_id: propuestaId,
+        elector_id: electorId,
+      });
+      if (error) {
+        mostrarAviso(avisoPropuestas, 'Ya habías votado o hubo un problema al registrar tu voto.');
+        return;
+      }
+      cargarPropuestas();
+    }
+
+    const formPropuesta = document.getElementById('form-propuesta');
+    const avisoForm = document.getElementById('aviso-form');
+
+    formPropuesta.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      mostrarAviso(avisoForm, '');
+
+      const datos = new FormData(formPropuesta);
+      const lugar = datos.get('lugar').trim();
+      const persona = datos.get('persona').trim();
+      const justificacion = datos.get('justificacion').trim();
+
+      const { error } = await db.from('propuestas_cena').insert({ lugar, persona, justificacion });
+
+      if (error) {
+        mostrarAviso(avisoForm, 'No se pudo enviar la propuesta. Intenta de nuevo.');
+        return;
+      }
+
+      formPropuesta.reset();
+      mostrarVista(tabPropuestas, vistaPropuestas, tabProponer, vistaProponer);
+      cargarPropuestas();
+    });
+
+    cargarPropuestas();
   </script>
 </body>
 </html>
