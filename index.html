@@ -16,7 +16,12 @@
   @media (prefers-color-scheme: dark) {
     body { background: #121820; color: #e8eef5; }
     .contenedor { background: #1b232e !important; border-color: #2b3644 !important; }
-    .espacio-formulario { background: #202a37 !important; border-color: #364656 !important; color: #9fb0c2 !important; }
+    .pestanas { border-bottom-color: #2b3644 !important; }
+    .pestana { color: #9fb0c2 !important; }
+    .pestana.activa { color: #e8eef5 !important; border-bottom-color: #6ea0e8 !important; }
+    .propuesta { background: #202a37 !important; border-color: #364656 !important; }
+    .vacio { color: #9fb0c2 !important; }
+    input, textarea { background: #202a37 !important; border-color: #364656 !important; color: #e8eef5 !important; }
   }
   .contenedor {
     background: #fff; border: 1px solid #dde3ea; border-radius: 14px;
@@ -35,14 +40,105 @@
     color: inherit;
     opacity: .85;
   }
-  .espacio-formulario {
+  .pestanas {
+    display: flex;
+    border-bottom: 1px solid #dde3ea;
+    margin-bottom: 20px;
+  }
+  .pestana {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 6px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #6b7684;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .pestana.activa {
+    color: #1a2027;
+    border-bottom-color: #2b6fe0;
+    font-weight: 600;
+  }
+  .vista { display: none; }
+  .vista.activa { display: block; }
+  .vacio {
     border: 2px dashed #c3cdd8;
     border-radius: 10px;
     padding: 28px 16px;
     text-align: center;
     color: #6b7684;
     font-size: 14px;
+  }
+  .lista-propuestas {
+    list-style: none;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .propuesta {
+    border: 1px solid #dde3ea;
+    border-radius: 10px;
+    padding: 14px 16px;
     background: #f9fafb;
+  }
+  .propuesta h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+  }
+  .propuesta .quien {
+    font-size: 13px;
+    opacity: .7;
+    margin: 0 0 8px;
+  }
+  .propuesta .justificacion {
+    margin: 0 0 10px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .votacion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .votacion button {
+    border: 1px solid #c3cdd8;
+    background: #fff;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 14px;
+  }
+  input, textarea {
+    font-family: inherit;
+    font-size: 15px;
+    padding: 8px 10px;
+    border: 1px solid #c3cdd8;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  form button[type="submit"] {
+    align-self: flex-start;
+    background: #2b6fe0;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 15px;
+    cursor: pointer;
   }
 </style>
 </head>
@@ -55,9 +151,66 @@
       Este espacio es para dejar ideas, comentarios o quejas sobre lo que
       se pueda mejorar. Cualquier persona puede escribir la suya.
     </p>
-    <div class="espacio-formulario" id="espacio-formulario">
-      Aquí va a ir el formulario para dejar tu sugerencia.
+
+    <div class="pestanas" role="tablist">
+      <button class="pestana activa" id="tab-propuestas" role="tab" aria-selected="true" aria-controls="vista-propuestas">
+        Lugares propuestos
+      </button>
+      <button class="pestana" id="tab-proponer" role="tab" aria-selected="false" aria-controls="vista-proponer">
+        Proponer un lugar
+      </button>
     </div>
+
+    <section class="vista activa" id="vista-propuestas" role="tabpanel" aria-labelledby="tab-propuestas">
+      <ul class="lista-propuestas" id="lista-propuestas" hidden></ul>
+      <p class="vacio" id="mensaje-vacio">
+        Todavía no hay propuestas de lugares para la cena de fin de año.
+      </p>
+    </section>
+
+    <section class="vista" id="vista-proponer" role="tabpanel" aria-labelledby="tab-proponer">
+      <p class="explicacion" style="margin-bottom:16px;">
+        Propón un lugar para la cena de fin de año.
+      </p>
+      <form id="form-propuesta">
+        <label>
+          Nombre del lugar
+          <input type="text" name="lugar" required>
+        </label>
+        <label>
+          Tu nombre
+          <input type="text" name="persona" required>
+        </label>
+        <label>
+          Breve justificación
+          <textarea name="justificacion" required></textarea>
+        </label>
+        <button type="submit">Enviar propuesta</button>
+      </form>
+    </section>
   </div>
+
+  <script>
+    const tabPropuestas = document.getElementById('tab-propuestas');
+    const tabProponer = document.getElementById('tab-proponer');
+    const vistaPropuestas = document.getElementById('vista-propuestas');
+    const vistaProponer = document.getElementById('vista-proponer');
+
+    function mostrarVista(tab, vista, otroTab, otraVista) {
+      tab.classList.add('activa');
+      tab.setAttribute('aria-selected', 'true');
+      vista.classList.add('activa');
+      otroTab.classList.remove('activa');
+      otroTab.setAttribute('aria-selected', 'false');
+      otraVista.classList.remove('activa');
+    }
+
+    tabPropuestas.addEventListener('click', () => {
+      mostrarVista(tabPropuestas, vistaPropuestas, tabProponer, vistaProponer);
+    });
+    tabProponer.addEventListener('click', () => {
+      mostrarVista(tabProponer, vistaProponer, tabPropuestas, vistaPropuestas);
+    });
+  </script>
 </body>
 </html>
