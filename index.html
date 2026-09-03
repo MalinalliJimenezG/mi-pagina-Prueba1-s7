@@ -3,46 +3,61 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Todavía no hay nada aquí</title>
+<title>Buzón de sugerencias</title>
 <style>
   :root { color-scheme: light dark; }
   body {
     margin: 0; min-height: 100vh;
-    display: grid; place-items: center;
+    display: flex; flex-direction: column; align-items: center;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     background: #f4f6f8; color: #1a2027;
     padding: 24px;
   }
   @media (prefers-color-scheme: dark) {
     body { background: #121820; color: #e8eef5; }
-    .caja { background: #1b232e !important; border-color: #2b3644 !important; }
-    code { background: #253040 !important; }
+    .contenedor { background: #1b232e !important; border-color: #2b3644 !important; }
+    .espacio-formulario { background: #202a37 !important; border-color: #364656 !important; color: #9fb0c2 !important; }
   }
-  .caja {
+  .contenedor {
     background: #fff; border: 1px solid #dde3ea; border-radius: 14px;
-    padding: 34px; max-width: 480px; text-align: center;
+    padding: 32px; width: 100%; max-width: 560px; box-sizing: border-box;
     box-shadow: 0 10px 30px -18px rgba(0,0,0,.3);
   }
-  h1 { font-size: 22px; margin: 0 0 10px; }
-  p { margin: 0 0 14px; line-height: 1.55; }
-  p:last-child { margin-bottom: 0; }
-  code {
-    background: #eef2f6; padding: 2px 6px; border-radius: 4px;
-    font-family: ui-monospace, "Consolas", monospace; font-size: .9em;
+  header h1 {
+    font-size: clamp(22px, 5vw, 28px);
+    margin: 0 0 10px;
+    text-align: center;
   }
-  .chica { font-size: 14px; opacity: .75; }
+  .explicacion {
+    margin: 0 0 24px;
+    line-height: 1.55;
+    text-align: center;
+    color: inherit;
+    opacity: .85;
+  }
+  .espacio-formulario {
+    border: 2px dashed #c3cdd8;
+    border-radius: 10px;
+    padding: 28px 16px;
+    text-align: center;
+    color: #6b7684;
+    font-size: 14px;
+    background: #f9fafb;
+  }
 </style>
 </head>
 <body>
-  <div class="caja">
-    <h1>Todavía no hay nada aquí</h1>
-    <p>Y eso es exactamente lo que tiene que decir hoy.</p>
-    <p>Si estás leyendo esto en tu propia liga, quiere decir que
-       <strong>tu repositorio, tu publicación y tu página ya funcionan</strong>.
-       Es todo lo que necesitabas antes de la sesión.</p>
-    <p class="chica">El martes le vas a pedir a Claude que reemplace esta página
-       por la tuya. Este archivo se llama <code>index.html</code> y es el único
-       que hay que cambiar.</p>
+  <div class="contenedor">
+    <header>
+      <h1>Buzón de sugerencias</h1>
+    </header>
+    <p class="explicacion">
+      Este espacio es para dejar ideas, comentarios o quejas sobre lo que
+      se pueda mejorar. Cualquier persona puede escribir la suya.
+    </p>
+    <div class="espacio-formulario" id="espacio-formulario">
+      Aquí va a ir el formulario para dejar tu sugerencia.
+    </div>
   </div>
 </body>
 </html>
